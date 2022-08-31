@@ -1,0 +1,164 @@
+# Preparation
+
+```{r }
+#* packages
+library(sp)
+library(spdep)
+library(spatialreg)
+library(sf)
+library(glmnet)
+library(raster)
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(parallel)
+library(magrittr)
+library(gstat)
+library(GWmodel)
+library(scam)
+library(mgcv)
+library(fixest)
+library(magic)
+library(stringr)
+library(ggplot2)
+library(tictoc)
+library(here)
+```
+
+## Source all the R functions
+```{r }
+here("GitControlled", "Codes", "Functions", "R") %>%
+  fs::dir_ls(., full.names = TRUE) %>%
+  purrr::map(~ source(.))
+```
+
+## Read the simulation data
+
+```{r }
+all_sim_data <- readRDS(here("Shared/Data/all_sim_data.rds"))
+```
+
+# Simulation
+
+## Individual runs
+
+```{r }
+x_vars <-
+  c(
+    "b0_1", "b0_2",
+    "sqrt(b1_2_1)", "b1_2_2", "b1_1_1^2", "b1_1_2",
+    # "Nk_2_1", "Nk_2_2", "Nk_1_1", "Nk_1_2",
+    "log(plateau_2_1)", "plateau_2_2", "sqrt(plateau_1_1)", "plateau_1_2",
+    "theta_plateau_2", "theta_Nk_2", "theta_b0_2"
+  )
+
+# x_vars <- c("Nk", "plateau", "b0")
+
+#* select the estimation models you want
+models_data <-
+  tribble(
+    ~model, ~on,
+    "ser_50", TRUE, # spatial error 50m
+    "ser_100", FALSE, # spatial error 100m
+    "lm", TRUE, # OLS
+    "ma_cf", TRUE, # multi-arm causal forest
+    "brf", TRUE, # boosted regression forest
+    "rf", TRUE, # random forest
+    "dmlof_semi", FALSE, # DML orthogonal forest semiparametric
+    "dmlof_quad", FALSE, # DML orthogonal forest quadratic
+    "drof", FALSE, # Doubly-robust orthogonal forest
+    "gwr_t", FALSE, # GWR Trevisan
+    "gwr_semi", FALSE, # GWR semi-parametric (gam)
+    "gwr_zone_scam", FALSE # GWR zoning and then gam
+  ) %>%
+  data.table()
+
+temp <-
+  run_mc_sim(
+    x_vars,
+    models_data,
+    all_sim_data,
+    sim_range = 1:200,
+    exp_sets = 3
+  )
+
+# temp <- all_results
+```
+
+```{r }
+perf_data <-
+  temp %>%
+  dplyr::select(exp_set_id, model, performance) %>%
+  unnest() %>%
+  data.table() %>%
+  .[, model := case_when(
+    model == "rf" ~ "RF",
+    model == "brf" ~ "BRF",
+    model == "ma_cf" ~ "CF",
+    model == "lm" ~ "OLS",
+    model == "ser_50" ~ "SEM"
+  )] %>%
+  .[, model :=
+    factor(
+      model,
+      levels = c("RF", "BRF", "CF", "OLS", "SEM")
+    )] %>%
+  .[, field_size := case_when(
+    exp_set_id == 1 ~ "Small field",
+    exp_set_id == 2 ~ "Medium field",
+    exp_set_id == 3 ~ "Large field"
+  )]
+
+g_perf_exp <-
+  perf_data %>%
+  nest_by(exp_set_id) %>%
+  mutate(data = list(
+    data.table(data) %>%
+      .[, rmse_train := NULL] %>%
+      melt(
+        id.vars = c("model", "sim"),
+        measure.vars = c("rmse_cv", "rmse_eonr", "profit")
+      ) %>%
+      .[, variable := case_when(
+        variable == "rmse_cv" ~ "Yield RMSE (kg/ha)",
+        variable == "rmse_eonr" ~ "EONR RMSE (kg/ha)",
+        variable == "profit" ~ "Profit Deficit ($/ha)"
+      )] %>%
+      .[, variable :=
+        factor(
+          variable,
+          levels = c(
+            "Yield RMSE (kg/ha)",
+            "EONR RMSE (kg/ha)",
+            "Profit Deficit ($/ha)"
+          )
+        )]
+  )) %>%
+  mutate(g_performance = list(
+    ggplot(data, aes(y = value, x = model, fill = model)) +
+      stat_boxplot(
+        geom = "errorbar",
+        width = 0.4,
+        position = position_dodge(0.6),
+        lwd = 0.25
+      ) +
+      geom_boxplot(
+        position = position_dodge(0.6),
+        width = 0.4,
+        outlier.shape = NA,
+        lwd = 0.25
+      ) +
+      facet_wrap(. ~ variable, scales = "free_y") +
+      ylab("") +
+      xlab("") +
+      theme_bw() +
+      theme(
+        legend.position = "none",
+        legend.title = element_blank(),
+        legend.key.size = unit(0.4, "cm")
+      )
+  )) %>%
+  dplyr::select(-data)
+
+g_perf_exp$g_performance
+```

@@ -1,0 +1,120 @@
+```{r }
+#* packages
+library(sp)
+library(spdep)
+library(spatialreg)
+library(sf)
+library(glmnet)
+library(raster)
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(parallel)
+library(magrittr)
+library(gstat)
+library(GWmodel)
+library(scam)
+library(mgcv)
+library(fixest)
+library(magic)
+library(stringr)
+library(ggplot2)
+library(tictoc)
+library(here)
+```
+
+# Data generation
+
+```{r }
+N <- 1000
+
+data <-
+  data.table() %>%
+  .[, `:=`(
+    x_1 = runif(N),
+    x_2 = runif(N),
+    x_3 = runif(N)
+  )] %>%
+  .[, x_min := pmin(x_1, x_2, x_3)] %>%
+  .[, t := runif(N) < 0.5] %>%
+  .[, y := 2 + 5 * x_min * t + rnorm(N)] %>%
+  .[, `:=`(
+    x_1_sqrt = sqrt(x_1),
+    x_2_log = log(x_2),
+    x_3_sq = x_3^2
+  )]
+
+test_data <-
+  data.table() %>%
+  .[, `:=`(
+    x_1 = runif(N),
+    x_2 = runif(N),
+    x_3 = runif(N)
+  )] %>%
+  .[, x_min := pmin(x_1, x_2, x_3)] %>%
+  .[, t := runif(N)] %>%
+  .[, y := 2 + 5 * x_min * t] %>%
+  .[, `:=`(
+    x_1_sqrt = sqrt(x_1),
+    x_2_log = log(x_2),
+    x_3_sq = x_3^2
+  )]
+
+ols_temp_easy <- lm(y ~ I(t * x_1) + I(t * x_2) + I(t * x_3) + I(t * x_1^2) + I(t * x_2^2) + I(t * x_3^2), data = data)
+
+ols_temp_hard <- lm(y ~ I(t * x_1_sqrt) + I(t * x_2_log) + I(t * x_3_sq), data = data)
+
+RF_temp_easy <-
+  grf::regression_forest(
+    X = data[, .(t, x_1, x_2, x_3)] %>% as.matrix(),
+    Y = data[, y],
+    num.trees = 1000,
+    # min.node.size = 10,
+    tune.parameters = "all",
+    num.threads = 1
+  )
+
+RF_temp_hard <-
+  grf::regression_forest(
+    X = data[, .(t, x_1_sqrt, x_2_log, x_3_sq)] %>% as.matrix(),
+    Y = data[, y],
+    num.trees = 1000,
+    # min.node.size = 10,
+    tune.parameters = "all",
+    num.threads = 1
+  )
+
+test_data <-
+  test_data %>%
+  .[, y_hat_RF_easy :=
+    predict(
+      RF_temp_easy,
+      newdata = .[, .(t, x_1, x_2, x_3)] %>% as.matrix()
+    )] %>%
+  .[, y_hat_RF_hard :=
+    predict(
+      RF_temp_hard,
+      newdata = .[, .(t, x_1_sqrt, x_2_log, x_3_sq)] %>% as.matrix()
+    )] %>%
+  .[, y_hat_ols_easy :=
+    predict(
+      ols_temp_easy,
+      newdata = .[, .(t, x_1, x_2, x_3)]
+    )] %>%
+  .[, y_hat_ols_hard :=
+    predict(
+      ols_temp_hard,
+      newdata = .[, .(t, x_1_sqrt, x_2_log, x_3_sq)]
+    )]
+
+plot(test_data$y, test_data$y_hat_RF_easy)
+plot(test_data$y, test_data$y_hat_ols_easy)
+plot(test_data$y, test_data$y_hat_ols_hard)
+
+lm(y ~ y_hat_RF_easy, data = test_data) %>% summary()
+lm(y ~ y_hat_RF_hard, data = test_data) %>% summary()
+lm(y ~ y_hat_ols_easy, data = test_data) %>% summary()
+lm(y ~ y_hat_ols_hard, data = test_data) %>% summary()
+```
+
+

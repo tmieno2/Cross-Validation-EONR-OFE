@@ -1,0 +1,135 @@
+# Preparation
+
+```{r }
+#* packages
+library(sp)
+library(spdep)
+library(spatialreg)
+library(sf)
+library(glmnet)
+library(raster)
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(parallel)
+library(magrittr)
+library(gstat)
+library(GWmodel)
+library(scam)
+library(mgcv)
+library(fixest)
+library(magic)
+library(stringr)
+library(ggplot2)
+library(tictoc)
+library(here)
+```
+
+## Source all the R functions
+```{r }
+here("GitControlled", "Codes", "Functions", "R") %>%
+  fs::dir_ls(., full.names = TRUE) %>%
+  purrr::map(~ source(.))
+```
+
+## Read the simulation data
+
+```{r }
+all_sim_data <- readRDS(here("Shared/Data/all_sim_data.rds"))
+```
+
+# Simulation
+
+## Specify which models to run
+
+```{r }
+#* select the estimation models you want
+models_data <-
+  tribble(
+    ~model, ~on,
+    "ser_50", FALSE, # spatial error 50m
+    "ser_100", FALSE, # spatial error 100m
+    "lm", TRUE, # OLS
+    "ma_cf", TRUE, # multi-arm causal forest
+    "brf_grf", TRUE, # boosted regression forest
+    "rf_grf", TRUE, # random forest
+    "xgbrf", TRUE, # extreme gradient boosting from the xgboost package
+    "rf_ranger", TRUE, # random forest by the ranger pakcage
+    "dmlof_semi", FALSE, # DML orthogonal forest semiparametric
+    "dmlof_quad", FALSE, # DML orthogonal forest quadratic
+    "drof", FALSE, # Doubly-robust orthogonal forest
+    "gwr_t", FALSE, # GWR Trevisan
+    "gwr_semi", FALSE, # GWR semi-parametric (gam)
+    "gwr_zone_scam", FALSE # GWR zoning and then gam
+  ) %>%
+  data.table()
+```
+
+## Prepare scenarios
+
+```{r }
+scenarios <-
+  tibble(
+    scenario = c("ideal", "complete", "complete_v1", "missing", "non-linear"),
+    x_vars = list(
+      c("Nk", "plateau", "b0"),
+      c(
+        "b0_1", "b0_2",
+        # "b1_2_1", "b1_2_2", "b1_1_1", "b1_1_2",
+        # "b2_2_1", "b2_2_2", "b2_1_1", "b2_1_2",
+        "Nk_2_1", "Nk_2_2", "Nk_1_1", "Nk_1_2",
+        "plateau_2_1", "plateau_2_2", "plateau_1_1", "plateau_1_2",
+        "theta_plateau_2", "theta_Nk_2", "theta_b0_2"
+      ),
+      c(
+        "b0_1", "b0_2",
+        "b1_2_1", "b1_2_2", "b1_1_1", "b1_1_2",
+        # "b2_2_1", "b2_2_2", "b2_1_1", "b2_1_2",
+        # "Nk_2_1", "Nk_2_2", "Nk_1_1", "Nk_1_2",
+        "plateau_2_1", "plateau_2_2", "plateau_1_1", "plateau_1_2",
+        "theta_plateau_2", "theta_Nk_2", "theta_b0_2"
+      ),
+      c(
+        "b0_1",
+        # "b0_2",
+        # "b1_2_1", "b1_2_2", "b1_1_1", "b1_1_2",
+        # "b2_2_1", "b2_2_2", "b2_1_1", "b2_1_2",
+        "Nk_2_1", "Nk_2_2", "Nk_1_1",
+        # "Nk_1_2",
+        "plateau_2_1", "plateau_2_2", "plateau_1_1",
+        # "plateau_1_2",
+        "theta_plateau_2", "theta_Nk_2", "theta_b0_2"
+      ),
+      c(
+        "b0_1", "b0_2",
+        "sqrt(b1_2_1)", "b1_2_2", "b1_1_1^2", "b1_1_2",
+        # "Nk_2_1", "Nk_2_2", "Nk_1_1", "Nk_1_2",
+        "log(plateau_2_1)", "plateau_2_2", "sqrt(plateau_1_1)", "plateau_1_2",
+        "theta_plateau_2", "theta_Nk_2", "theta_b0_2"
+      )
+    )
+  ) %>%
+  rowwise()
+```
+
+## Run simulations for each scenario
+
+```{r }
+past_results <- readRDS("Shared/Results/all_results.rds")
+
+new_results <-
+  left_join(scenarios, past_results) %>%
+  filter(is.null(sim_results)) %>%
+  mutate(sim_results = list(
+    run_mc_sim(
+      x_vars,
+      models_data,
+      all_sim_data,
+      sim_range = 1:500
+    )
+  ))
+
+all_results <- rbind(new_results, past_results)
+
+saveRDS(all_results, "Shared/Results/all_results.rds")
+```
