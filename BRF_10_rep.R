@@ -1,4 +1,6 @@
 # BRF for 10 rep, S_learner  
+install.packages("parallel")
+
 
 try <- function(n){
   
@@ -72,7 +74,10 @@ brf_fold_by_fold <-function(i){
   data_ret <-data_frame(cbind(EONR))
   return(data_ret)
 } 
-BRF <-lapply(1:10, brf_fold_by_fold)%>%unlist()%>%data_frame()%>%cbind()
+
+BRF <- mclapply(1:10, brf_fold_by_fold, mc.cores = detectCores() - 1)%>%unlist()%>%data_frame()%>%cbind()
+
+#BRF <-lapply(1:10, brf_fold_by_fold)%>%unlist()%>%data_frame()%>%cbind()
 
 #################################################################################
 
