@@ -67,20 +67,13 @@ l <- function(n){
   data_to_re <- brf
   return(data_to_re)
 }
-gg <- lapply(1:10, l)
+#gg <- lapply(1:10, l)
 
-brf_fold_by_fold <-function(i){
-  EONR <- gg[i]%>%data_frame()
-  data_ret <-data_frame(cbind(EONR))
-  return(data_ret)
-} 
 
-BRF <- mclapply(1:10, brf_fold_by_fold, mc.cores = detectCores() - 1)%>%unlist()%>%data_frame()%>%cbind()
+gg <- mclapply(1:10, l, mc.cores = detectCores() - 1)
 
-#BRF <-lapply(1:10, brf_fold_by_fold)%>%unlist()%>%data_frame()%>%cbind()
 
 #################################################################################
-
 df_rep1<- gg[1]%>%data.frame()%>% setnames(.,"repeat1")
 df_rep2 <- gg[2]%>%data.frame()%>% setnames(.,"repeat2")
 df_rep3 <- gg[3]%>%data.frame()%>% setnames(.,"repeat3")
