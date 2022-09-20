@@ -7,7 +7,7 @@ try <- function(n){
   skcv_folds_try <- spatial_clustering_cv(data_sf, v = 6) 
   
   scv_try<-
-    skcv_folds %>% 
+    skcv_folds_try %>% 
     rowwise() %>% 
     mutate(
       training_data = list(analysis(splits)),
@@ -67,23 +67,22 @@ l <- function(n){
   data_to_re <- brf
   return(data_to_re)
 }
-#gg <- lapply(1:10, l)
 
 
-gg <- mclapply(1:10, l, mc.cores = detectCores() - 1)
+brf_res <- mclapply(1:10, l, mc.cores = detectCores() - 1)
 
 
 #################################################################################
-df_rep1<- gg[1]%>%data.frame()%>% setnames(.,"repeat1")
-df_rep2 <- gg[2]%>%data.frame()%>% setnames(.,"repeat2")
-df_rep3 <- gg[3]%>%data.frame()%>% setnames(.,"repeat3")
-df_rep4 <- gg[4]%>%data.frame()%>% setnames(.,"repeat4")
-df_rep5 <- gg[5]%>%data.frame()%>% setnames(.,"repeat5")
-df_rep6 <- gg[6]%>%data.frame()%>% setnames(.,"repeat6")
-df_rep7 <- gg[7]%>%data.frame()%>% setnames(.,"repeat7")
-df_rep8 <- gg[8]%>%data.frame()%>% setnames(.,"repeat8")
-df_rep9 <- gg[9]%>%data.frame()%>% setnames(.,"repeat9")
-df_rep10 <-gg[10]%>%data.frame()%>% setnames(.,"repeat10")
+df_rep1<- brf_res[1]%>%data.frame()%>% setnames(.,"repeat1")
+df_rep2 <- brf_res[2]%>%data.frame()%>% setnames(.,"repeat2")
+df_rep3 <- brf_res[3]%>%data.frame()%>% setnames(.,"repeat3")
+df_rep4 <- brf_res[4]%>%data.frame()%>% setnames(.,"repeat4")
+df_rep5 <- brf_res[5]%>%data.frame()%>% setnames(.,"repeat5")
+df_rep6 <- brf_res[6]%>%data.frame()%>% setnames(.,"repeat6")
+df_rep7 <- brf_res[7]%>%data.frame()%>% setnames(.,"repeat7")
+df_rep8 <- brf_res[8]%>%data.frame()%>% setnames(.,"repeat8")
+df_rep9 <- brf_res[9]%>%data.frame()%>% setnames(.,"repeat9")
+df_rep10 <-brf_res[10]%>%data.frame()%>% setnames(.,"repeat10")
 
 BRF_folds <- cbind(df_rep1,df_rep2,df_rep3,df_rep4,df_rep5,df_rep6,df_rep7,df_rep8,df_rep9,df_rep10)%>%
   mutate(mean_of_repeats=rowMeans(.))
