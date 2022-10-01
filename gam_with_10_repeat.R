@@ -2,7 +2,7 @@
 
 try <- function(n){
   
-  skcv_folds_try <- spatial_clustering_cv(data_sf, v = 6) 
+  skcv_folds_try <- spatial_clustering_cv(data_sf_2, v = 6) 
   
   scv_try<-
     skcv_folds_try %>% 
@@ -30,7 +30,7 @@ gam_fun <- function(n){
     # gam  train   
     
     gam_train <- 
-      gam(yield ~ s(N_tgt), data = train_data)
+      gam(yield ~ s(N_tgt,k=1), data = train_data)
     
     
     # gam predict 
@@ -41,7 +41,7 @@ gam_fun <- function(n){
       test_data_cell <- test_data[i,]%>% subset(., select=-c(N_tgt))%>% 
         .[rep(row, times),]%>% mutate(N_tgt=seq(109,242,by=1))
       
-      predict_gam <- predict(gam, test_data_cell)%>% data_frame()
+      predict_gam <- predict(gam_train, test_data_cell)%>% data_frame()
       
       
       test_data_cell$y_hat <-  predict_gam
@@ -67,25 +67,28 @@ gam_fun <- function(n){
 }
 
 #linear_results <- lapply(1:10, linear_function)
-gam_results_10_repeats <- mclapply(1:10, linear_function, mc.cores = detectCores() - 1)
+gam_results_10_repeats_2 <- mclapply(1:10, gam_fun, mc.cores = detectCores() - 1)
 
 
 #################################################################################
 
-gam1<-  gam_results_10_repeats[1]%>%data.frame()%>% setnames(.,"repeat1")
-gam2 <- gam_results_10_repeats[2]%>%data.frame()%>% setnames(.,"repeat2")
-gam3 <- gam_results_10_repeats[3]%>%data.frame()%>% setnames(.,"repeat3")
-gam4 <- gam_results_10_repeats[4]%>%data.frame()%>% setnames(.,"repeat4")
-gam5 <- gam_results_10_repeats[5]%>%data.frame()%>% setnames(.,"repeat5")
-gam6 <- gam_results_10_repeats[6]%>%data.frame()%>% setnames(.,"repeat6")
-gam7 <- gam_results_10_repeats[7]%>%data.frame()%>% setnames(.,"repeat7")
-gam8 <- gam_results_10_repeats[8]%>%data.frame()%>% setnames(.,"repeat8")
-gam9 <- gam_results_10_repeats[9]%>%data.frame()%>% setnames(.,"repeat9")
-gam10 <-gam_results_10_repeats[10]%>%data.frame()%>% setnames(.,"repeat10")
+gam1<-  gam_results_10_repeats_2[1]%>%data.frame()%>% setnames(.,"repeat1")
+gam2 <- gam_results_10_repeats_2[2]%>%data.frame()%>% setnames(.,"repeat2")
+gam3 <- gam_results_10_repeats_2[3]%>%data.frame()%>% setnames(.,"repeat3")
+gam4 <- gam_results_10_repeats_2[4]%>%data.frame()%>% setnames(.,"repeat4")
+gam5 <- gam_results_10_repeats_2[5]%>%data.frame()%>% setnames(.,"repeat5")
+gam6 <- gam_results_10_repeats_2[6]%>%data.frame()%>% setnames(.,"repeat6")
+gam7 <- gam_results_10_repeats_2[7]%>%data.frame()%>% setnames(.,"repeat7")
+gam8 <- gam_results_10_repeats_2[8]%>%data.frame()%>% setnames(.,"repeat8")
+gam9 <- gam_results_10_repeats_2[9]%>%data.frame()%>% setnames(.,"repeat9")
+gam10 <-gam_results_10_repeats_2[10]%>%data.frame()%>% setnames(.,"repeat10")
 
-gam_folds <- cbind(gam1,gam2,gam3,gam4,gam5,
-                   gam6,gam7,gam8,gam9,gam10)%>%
+gam_folds_2 <- cbind(gam1,gam2,gam3,gam4,gam5,
+                     gam6,gam7,gam8,gam9,gam10)%>%
   mutate(mean_of_repeats=rowMeans(.))
+
+
+
 
 #################################################################################
 
