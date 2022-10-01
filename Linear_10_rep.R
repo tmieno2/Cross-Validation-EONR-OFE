@@ -2,7 +2,7 @@
 
 try <- function(n){
   
-  skcv_folds_try <- spatial_clustering_cv(data_sf, v = 6) 
+  skcv_folds_try <- spatial_clustering_cv(data_sf_2, v = 6) 
   
   scv_try<-
     skcv_folds_try %>% 
@@ -69,27 +69,25 @@ linear_function <- function(n){
   return(data_to_reu)
 }
 
-#linear_results <- lapply(1:10, linear_function)
-linear_results_second_run <- mclapply(1:10, linear_function, mc.cores = detectCores() - 1)
-#####
-lin1<- linear_results_second_run[1]%>%data.frame()%>% setnames(.,"repeat1")
-lin2 <- linear_results_second_run[2]%>%data.frame()%>% setnames(.,"repeat2")
+linear_results_second_run_2 <- mclapply(1:10, linear_function, mc.cores = detectCores() - 1)
+
+
 
 #################################################################################
 
-lin1<- linear_results_second_run[1]%>%data.frame()%>% setnames(.,"repeat1")
-lin2 <- linear_results_second_run[2]%>%data.frame()%>% setnames(.,"repeat2")
-lin3 <- linear_results_second_run[3]%>%data.frame()%>% setnames(.,"repeat3")
-lin4 <- linear_results_second_run[4]%>%data.frame()%>% setnames(.,"repeat4")
-lin5 <- linear_results_second_run[5]%>%data.frame()%>% setnames(.,"repeat5")
-lin6 <- linear_results_second_run[6]%>%data.frame()%>% setnames(.,"repeat6")
-lin7 <- linear_results_second_run[7]%>%data.frame()%>% setnames(.,"repeat7")
-lin8 <- linear_results_second_run[8]%>%data.frame()%>% setnames(.,"repeat8")
-lin9 <- linear_results_second_run[9]%>%data.frame()%>% setnames(.,"repeat9")
-lin10 <-linear_results_second_run[10]%>%data.frame()%>% setnames(.,"repeat10")
+lin1<- linear_results_second_run_2[1]%>%data.frame()%>% setnames(.,"repeat1")
+lin2 <- linear_results_second_run_2[2]%>%data.frame()%>% setnames(.,"repeat2")
+lin3 <- linear_results_second_run_2[3]%>%data.frame()%>% setnames(.,"repeat3")
+lin4 <- linear_results_second_run_2[4]%>%data.frame()%>% setnames(.,"repeat4")
+lin5 <- linear_results_second_run_2[5]%>%data.frame()%>% setnames(.,"repeat5")
+lin6 <- linear_results_second_run_2[6]%>%data.frame()%>% setnames(.,"repeat6")
+lin7 <- linear_results_second_run_2[7]%>%data.frame()%>% setnames(.,"repeat7")
+lin8 <- linear_results_second_run_2[8]%>%data.frame()%>% setnames(.,"repeat8")
+lin9 <- linear_results_second_run_2[9]%>%data.frame()%>% setnames(.,"repeat9")
+lin10 <-linear_results_second_run_2[10]%>%data.frame()%>% setnames(.,"repeat10")
 
-lin_folds <- cbind(lin1,lin2,lin3,lin4,lin5,
-                   lin6,lin7,lin8,lin9,lin10)%>%
+lin_folds_2 <- cbind(lin1,lin2,lin3,lin4,lin5,
+                     lin6,lin7,lin8,lin9,lin10)%>%
   mutate(mean_of_repeats=rowMeans(.))
 
 #################################################################################
