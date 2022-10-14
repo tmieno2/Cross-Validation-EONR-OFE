@@ -1,0 +1,187 @@
+---
+title: "Report"
+date: "2022-10-14"
+
+############################### Random Forest ##################################
+RF:
+
+For each fold:
+
+1) train RF using train data 
+2) predict site specific EONR:
+  
+  For each cell in the test data
+  
+    i) creat a sequesnce of N and predict yield and call it "y_hat"
+    ii) calculate profit {profit=(pCorn*y_hat)-(pN*N_tgt)}, 
+    iii) find the N level that maximizes the profit (this gives EONR for each cell),
+    iv) average cell EONR to find EONR for each fold (this gives local 
+    EONR for the fold).
+
+R code for the procedure:
+
+ 
+
+####### Code for RF
+
+EONR_each_fold <- function(i){
+  train_data <- scv[["training_data"]][[i]]%>%st_drop_geometry()
+  test_data <- scv[["test_data"]][[i]]%>%st_drop_geometry()
+  
+  # RF train  
+  
+  RF <- 
+    ranger(
+      yield ~ theta_b2_2 + theta_b2_1 + theta_b1_2 + theta_b1_1 + Nk_2_1 + Nk_2_2 + Nk_1_1+ 
+        Nk_1_2+ plateau_2_1+ plateau_2_2+ plateau_1_1+ plateau_1_2+ N_tgt,     
+      data = train_data
+    )
+  
+  # RF predict 
+  EONR_1 <- lapply(1:nrow(test_data), function(i){
+    row=1
+    times = 134
+    #prediction for each cell
+    test_data_cell <- test_data[i,]%>% subset(., select=-c(N_tgt))%>% 
+      .[rep(row, times),]%>% mutate(N_tgt=seq(109,242,by=1))
+    
+    pred <- predict(RF, test_data_cell)$predictions
+    
+    test_data_cell$y_hat <- pred
+    
+    test_data_cell <- test_data_cell%>% mutate(profit=(pCorn*y_hat)-(pN*N_tgt))
+    
+    
+    EONR <- test_data_cell [which.max(profit), ]$N_tgt  #each cell
+    data_to_return <- data_frame(EONR=EONR)  #each cell
+    return(data_to_return)
+    
+  })%>%unlist()%>% data_frame()
+  
+  mean_each_fold <- mean(EONR_1$.)
+  
+  data_to_r <- data_frame(ff=mean_each_fold)
+  
+  return(data_to_r)  
+}
+
+EONR_fold<- lapply(1:6, EONR_each_fold)%>%unlist()%>% data_frame() ## RF
+
+########## End code RF
+
+################################################################################
+
+BRF & Linear 
+
+For BRF and Linear the procedure is like RF (the method is different). 
+Furtheremoer I repeat the procedure 10 times.
+
+################################  gam  #########################################
+
+gam
+
+For each fold:
+
+1) train gam using train data
+2) predict EONR:
+
+    i) in the test data predict yield and call it "y_hat"
+    ii) predict profit {profit=(pCorn*y_hat)-(pN*N_tgt)} 
+    iii) find the N level that maximizes profit (this gives EONR for each fold)
+    
+3) repeat the process 10 times
+
+R code: 
+
+########## code for gam
+
+gam_fun_update <- function(n){ 
+  yy <- list_of_repeat[n]%>%data.frame()
+  
+  gam <- lapply(1:6, function(i){
+    
+    train_data <- yy[["training_data"]][[i]]%>%st_drop_geometry()
+    test_data <- yy[["test_data"]][[i]]%>%st_drop_geometry()
+    
+    # gam  train   
+    
+    gam_train <- 
+      gam(yield ~ s(N_tgt,k=3), data = train_data)
+    
+    # gam predict 
+    
+      predict_gam <- predict(gam_train, test_data)%>% data_frame()
+      
+      
+      test_data$y_hat <-  predict_gam
+      
+      test_data <- test_data%>% mutate(profit=(pCorn*y_hat)-(pN*N_tgt))
+      
+      
+      EONR <- test_data[which.max(profit), ]$N_tgt 
+      
+ 
+    
+   
+    data_to_rn <- data_frame(ff=EONR)
+    return(data_to_rn)
+  }
+  )%>%unlist%>%data_frame()  
+  
+  
+  data_to_reu <- gam
+  return(data_to_reu)
+}
+
+gam_results_10_repeats_update <- mclapply(1:10, gam_fun_update, mc.cores = detectCores() - 1)
+
+########## End code for gam
+
+################################ True EONR #####################################
+
+1) Calculate the true EONR in the main data and call it "opt_N" 
+
+2) in the test data in each fold average "opt_N" (this gives true EONR for each 
+fold). 
+
+R codes:
+
+##########  code for true EONR
+
+data_to_work_with <- data_to_work_with%>%
+  .[, opt_N := (pN / pCorn - b1) / (2 * b2)] %>%
+  .[, opt_N := pmin(Nk, opt_N)] %>%
+  .[, opt_N := pmax(0, opt_N)]
+
+true_raw <- try(1)
+
+true <- function(i) { 
+  
+  d <- true_raw[["test_data"]][[i]]
+  true_eonr <- mean(d$opt_N)
+  
+  return(true_eonr)
+  }
+
+true_updated <- mclapply(1:6, true, mc.cores = detectCores() - 1)%>%unlist()%>% data_frame()  
+
+########## End code for true EONR
+
+
+################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
