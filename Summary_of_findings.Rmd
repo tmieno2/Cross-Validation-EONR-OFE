@@ -1,0 +1,41 @@
+---
+title: "Summary of findings"
+---
+
+
+
+At this point I considered EONR estimated by gam as the true EONR, and then used 
+MSE to pick the model that is closer to the gam in EONR estimation.
+
+gam vs linear: 
+
+EONRs estimated by the linear model either overstimate or understimate the gam-predicted EONR.
+I computed the mse between gam and linear:
+MES_gam_linear: #16790.97 
+
+gam vs BRF:
+
+It can be seen that EONRs estimated by BRF underestimate the gam-predicted EONR.
+MSE_gam_BRF: #13627.29
+
+gam vs RF:
+
+The RF model underestimates the true EONR.
+MSE_gam_RF: #12387.29
+
+which model to choose? 
+Based on MSE, RF can be selected 
+
+################################################################################
+Then I compared the true EONR with the BRF-estimated, RF-estimated & linear-estimated
+EONR to see which one is actually the nearest to the true EONR.
+
+MSE_true_linear: #11287.02
+MSE_true_BRF: #11346.11
+MSE_true_RF: ##11808.33
+
+It can be seen that linear is the closest EONR to the true EONR and RF has actually 
+the greatest MSE when compared to the true one.
+
+
+
