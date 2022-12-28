@@ -16,8 +16,8 @@ data <- data[3, ]$reg_data[[1]]$data[[1]]
 ################################################################################
 # BRF for 10 rep, S_learner  
 
-install.packages("parallel")
-install.packages("sf")
+# install.packages("parallel")
+# install.packages("sf")
 library(data.table)
 library(tidyverse)
 library(sf)
