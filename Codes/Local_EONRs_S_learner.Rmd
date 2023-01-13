@@ -226,7 +226,7 @@ find_local_EONR_all <- function(i, spatial_folds, data) {
 # find EONR for all models
 
 ```{r}
-EONR_all_models <- lapply(1:60, function(x) find_local_EONR_all(x, spatial_folds, data)) %>%
+EONRs_all_models <- lapply(1:60, function(x) find_local_EONR_all(x, spatial_folds, data)) %>%
   rbindlist()
 
 ```
@@ -246,9 +246,9 @@ Find_MSE_Local_EONR <- function(method1, method2, data){
 }                                                                          
 
 
-mse_gam_brf <- Find_MSE_Local_EONR("S-learner (BRF)", "S-learner (GAM)", EONR_all_models) #10242.74
-mse_gam_rf <- Find_MSE_Local_EONR("S-learner (RF)", "S-learner (GAM)", EONR_all_models)  #14438.68
-mse_gam_linear <- Find_MSE_Local_EONR("S-learner (Linear)", "S-learner (GAM)", EONR_all_models)  #8003.313
+mse_gam_brf <- Find_MSE_Local_EONR("S-learner (BRF)", "S-learner (GAM)", EONRs_all_models)         #10474.71
+mse_gam_rf <- Find_MSE_Local_EONR("S-learner (RF)", "S-learner (GAM)", EONRs_all_models)           #12020.56
+mse_gam_linear <- Find_MSE_Local_EONR("S-learner (Linear)", "S-learner (GAM)", EONRs_all_models)   #6503.282
 
 ```
 
@@ -261,6 +261,102 @@ mse_gam_linear_f_2 <- Find_MSE_Local_EONR("S-learner (Linear)", "S-learner (GAM)
 
 ####################################################################################
 
+# Visualize the results 
 
+```{r}
+# gam vs brf plot
+
+plot_gam_brf <- function(method2, data){
+  gam<- data%>% filter(method %in% c("S-learner (GAM)"))%>%
+    subset(., select=-c(id, repeats))
+  
+ brf<- data%>% filter(method %in% c(method2))%>%
+    subset(., select=-c(id, repeats))
+  
+  combined <- data_frame(gam=gam$N_tgt ,  brf=  brf$N_tgt)
+  return(combined)
+  
+}  
+
+
+# visualize gam-brf plot
+
+gam_brf <- plot_gam_brf("S-learner (BRF)", EONRs_all_models)
+
+
+x_1 <- max(gam_brf$gam) 
+x_2 <- max(gam_brf$brf)
+
+x_3 <- min(gam_brf$gam) 
+x_4 <- min(gam_brf$brf)
+
+
+vis_gam_brf <- ggplot(gam_brf, aes(x=gam,y=brf, colour = "red")) + 
+  geom_point()+geom_abline(slope=1, intercept = 0)+ xlim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)+ 
+  ylim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)
+
+################################################################################
+#gam vs rf plot
+
+plot_gam_rf <- function(method2, data){
+  gam<- data%>% filter(method %in% c("S-learner (GAM)"))%>%
+    subset(., select=-c(id, repeats))
+  
+  rf<- data%>% filter(method %in% c(method2))%>%
+    subset(., select=-c(id, repeats))
+  
+  combined <- data_frame(gam=gam$N_tgt ,  rf=  rf$N_tgt)
+  return(combined)
+  
+}  
+
+gam_rf <- plot_gam_rf("S-learner (RF)", EONRs_all_models)
+
+# visualize gam-rf plot
+
+x_1 <- max(gam_rf$gam) 
+x_2 <- max(gam_rf$rf)
+
+x_3 <- min(gam_rf$gam) 
+x_4 <- min(gam_rf$rf)
+
+
+vis_gam_rf <- ggplot(gam_rf, aes(x=gam,y=rf, colour = "red")) + 
+  geom_point()+geom_abline(slope=1, intercept = 0)+ xlim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)+ 
+  ylim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)
+
+
+################################################################################
+# gam vs linear plot
+
+plot_gam_linear <- function(method2, data){
+  gam<- data%>% filter(method %in% c("S-learner (GAM)"))%>%
+    subset(., select=-c(id, repeats))
+  
+  linear<- data%>% filter(method %in% c(method2))%>%
+    subset(., select=-c(id, repeats))
+  
+  combined <- data_frame(gam=gam$N_tgt ,  linear=  linear$N_tgt)
+  return(combined)
+  
+}  
+
+gam_linear <- plot_gam_linear("S-learner (Linear)", EONRs_all_models)
+
+# visualize gam-linear plot
+
+x_1 <- max(gam_linear$gam) 
+x_2 <- max(gam_linear$linear)
+
+x_3 <- min(gam_linear$gam) 
+x_4 <- min(gam_linear$linear)
+
+
+vis_gam_linear <- ggplot(gam_linear, aes(x=gam,y=linear, colour = "red")) + 
+  geom_point()+geom_abline(slope=1, intercept = 0)+ xlim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)+ 
+  ylim(if (x_3 < x_4) x_3 else x_4, if (x_1 > x_2) x_1 else x_2)
+
+
+```
 
 
