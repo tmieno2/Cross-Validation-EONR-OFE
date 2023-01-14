@@ -14,7 +14,6 @@ data_sf_2_field_1 <- st_as_sf(data_to_work_with_field_1, coords = c("X", "Y"))
 ################################################################################
 #RF field_1
 
-
 RF_train <- 
   ranger(
     yield ~ theta_b2_2 + theta_b2_1 + theta_b1_2 + theta_b1_1 + Nk_2_1 + Nk_2_2 + Nk_1_1+ 
