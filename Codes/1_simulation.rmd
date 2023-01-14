@@ -1,0 +1,39 @@
+---
+title: "Run simulations"
+author: "Mona Mousavi"
+date: "2023-01-10"
+output: html_document
+---
+
+
+# Objective 
+
++ To see if the cross validation method based on local EONR can select the right model (the best in predicting EONR)
+  - local EONR (GAM) vs EONR estaimtes from ML-based methods
++ How do we check whether our method is working or not (comparing with true EONR)
+
+# Preparation
+
+```{r}
+source(here::here("GitControlled/Codes/functions/packages.R"))
+source(here::here("GitControlled/Codes/Codes/functions/internal.R"))
+# source(here::here("GitControlled/Codes/Codes/functions/packages.R"))
+```
+
+# Simulation
+
+Speficy covariates for regression
+
+For each field (loop over fields){
+  1. load the data
+  2. find true EONR
+  3. create spatial data folds (our method of model selection)
+  for each fold {
+    1. create trainining and test datasets
+    2. train (ML) models using the training data, predict yield and profit using test datasets, find the EONR site-specifically (by observation), and then average them, which is estimated local EONR
+    3. train a GAM on the test data, simulate yields at sequqnce of N levels, find profits, and then local EONR (considered true EONR)
+    4. Find the MSE of EONR for each model and select the model that has the lowest MSE (the best model according to our method)
+    5. Find the MSE of yield and select the model that has the lowest MSE (yield-prediction-based model selection)
+  }
+  4. for each method, train a model using the whole data and find EONR, compare them to the true true EONR, find MSE of EONR, and select the model that has the lower MSE (truly the best one)
+}

@@ -130,7 +130,7 @@ find_local_EONR_Linear <- function(data, test_data, train_data) {
 }
 ```
 
-# S-leaner (gam)
+# GAM
 
 ```{r}
 find_local_EONR_gam <- function(data, test_data) {
@@ -217,8 +217,6 @@ find_local_EONR_all <- function(i, spatial_folds, data) {
 EONRs_all_models <- lapply(1:60, function(x) find_local_EONR_all(x, spatial_folds, data)) %>%
   rbindlist()
 ```
-
-
 
 # find MSE 
 
